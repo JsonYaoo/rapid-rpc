@@ -1,5 +1,6 @@
 package com.jsonyao.rapid.rpc.client;
 
+import com.jsonyao.rapid.rpc.codec.RpcRequest;
 import com.jsonyao.rapid.rpc.codec.RpcResponse;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -8,6 +9,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.net.SocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 基于Netty实现RPC框架: Client业务处理器
@@ -23,6 +26,11 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
         return remotePeer;
     }
 
+    /**
+     * requestId-rpcFuture
+     */
+    private Map<String, RpcFuture> pendingRpcTable = new ConcurrentHashMap<>();
+
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         super.channelRegistered(ctx);
@@ -37,13 +45,29 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
     }
 
     /**
-     * 读取Buffer数据: 已经被自定义解码器解码成RpcResponse了
+     * 服务端响应时, 客户端读取Buffer数据: 已经被自定义解码器解码成RpcResponse了
      * @param ctx
-     * @param msg
+     * @param rpcResponse
      * @throws Exception
      */
-    protected void channelRead0(ChannelHandlerContext ctx, RpcResponse msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, RpcResponse rpcResponse) throws Exception {
+        String requestId = rpcResponse.getRequestId();
+        RpcFuture rpcFuture = pendingRpcTable.get(requestId);
+        if(rpcFuture != null) {
+            pendingRpcTable.remove(requestId);
+            rpcFuture.done(rpcResponse);
+        }
+    }
 
+    /**
+     * 异步发送请求: Future模型: 可以支持Future#get方法, 通过其他线程获取返回结果
+     * @return
+     */
+    public RpcFuture sendRequest(RpcRequest request) {
+        RpcFuture rpcFuture = new RpcFuture(request);
+        pendingRpcTable.put(request.getRequestId(), rpcFuture);
+        channel.writeAndFlush(request);
+        return rpcFuture;
     }
 
     /**
