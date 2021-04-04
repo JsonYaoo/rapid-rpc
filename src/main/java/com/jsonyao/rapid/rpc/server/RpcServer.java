@@ -28,7 +28,7 @@ public class RpcServer {
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
 
     /**
-     * interfaceName-interfaceImplClass
+     * interfaceName-interfaceImplClass Bean
      */
     private volatile Map<String, Object> handlerMap = new HashMap<>();
 

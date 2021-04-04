@@ -125,7 +125,7 @@ public class RpcConnectManager {
      * 异步发起连接
      * @param remotePeer
      */
-    private void connectAsync(final InetSocketAddress remotePeer) {
+    private void connectAsync(InetSocketAddress remotePeer) {
         threadPoolExecutor.submit(new Runnable() {
             public void run() {
                 Bootstrap bootstrap = new Bootstrap();
@@ -144,7 +144,7 @@ public class RpcConnectManager {
      * @param b
      * @param remotePeer
      */
-    private void connect(final Bootstrap b, final InetSocketAddress remotePeer){
+    private void connect(Bootstrap b, InetSocketAddress remotePeer){
         // 1. 真正的建立连接
         final ChannelFuture channelFuture = b.connect(remotePeer);
 
@@ -263,7 +263,7 @@ public class RpcConnectManager {
     /**
      * 重新发起一次连接
      */
-    public void reconnect(final RpcClientHandler handler, final SocketAddress remotePeer) {
+    public void reconnect(RpcClientHandler handler, SocketAddress remotePeer) {
         // 释放旧的资源
         if(handler != null) {
             handler.close();
@@ -278,7 +278,7 @@ public class RpcConnectManager {
     /**
      * 连接失败时, 及时清除资源, 清空缓存: 单独清理失败的
      */
-    private void clearConnected(final InetSocketAddress remotePeer) {
+    private void clearConnected(InetSocketAddress remotePeer) {
         // 然后从connectedHandlerMap缓存中移除指定的rpcClientHandler
         RpcClientHandler handler = connectedHandlerMap.get(remotePeer);
         if(handler != null) {
@@ -292,7 +292,7 @@ public class RpcConnectManager {
      * 清除所有缓存
      */
     private void clearAllConnected() {
-        for (final RpcClientHandler rpcClientHandler : connectedHandlerList) {
+        for (RpcClientHandler rpcClientHandler : connectedHandlerList) {
             // 通过rpcClientHandler找到remotePeer => 在rpcClientHandler缓存了remotePeer的引用
             SocketAddress remotePeer = rpcClientHandler.getRemotePeer();
 
