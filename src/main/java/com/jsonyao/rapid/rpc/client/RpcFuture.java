@@ -135,14 +135,14 @@ public class RpcFuture implements Future<Object> {
     }
 
     /**
-     * 快速失败方式获取服务响应
+     * 快速失败同步阻塞方式获取服务响应
      * @return
      * @throws InterruptedException
      * @throws ExecutionException
      */
     @Override
     public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        // 快速失败方式获取
+        // 快速失败同步阻塞方式获取
         boolean success = sync.tryAcquireNanos(-1, unit.toNanos(timeout));
         if(success) {
             if(this.response != null) {
@@ -165,7 +165,7 @@ public class RpcFuture implements Future<Object> {
         private static final long serialVersionUID = 3247758605222400071L;
 
         /**
-         * 已完成: 1代表已完成, 0代表pending, -1代表已获取?
+         * 已完成: 1代表已完成, 0代表pending, -1代表已获取 => 其实随便传什么都可以, 反正底层都是AQS实现, 与传的无关
          */
         private final int done = 1;
 
