@@ -22,6 +22,9 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
      */
     private Channel channel;
     private SocketAddress remotePeer;
+    public Channel getChannel() {
+        return channel;
+    }
     public SocketAddress getRemotePeer() {
         return remotePeer;
     }
@@ -35,12 +38,14 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         super.channelRegistered(ctx);
         this.channel = ctx.channel();
+        // 1、执行顺序: 通道激活时才知道通道连接的远端地址 => 此时获取远端地址为空
+//        this.remotePeer = this.channel.remoteAddress();
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
-        // 通道激活时才知道通道连接的远端地址
+        // 3、执行顺序: 通道激活时才知道通道连接的远端地址 => 此时获取远端地址不为空
         this.remotePeer = this.channel.remoteAddress();
     }
 

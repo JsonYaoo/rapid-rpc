@@ -64,19 +64,20 @@ public class RpcFuture implements Future<Object> {
 
     /**
      * 异步非阻塞方式执行回调处理操作
-     * @param rpcResponse
+     * @param response
      */
-    public void done(RpcResponse rpcResponse) {
+    public void done(RpcResponse response) {
         this.response = response;
         boolean success = sync.release(1);
         if(success) {
             invokeCallbacks();
         }
-
         // 记录整个RPC调用过程的时间
         long costTime = System.currentTimeMillis() - startTime;
         if(TIME_THRESHOLD < costTime) {
             log.warn("the rpc response time is too slow, requestId = " + this.request.getRequestId() + ", cost time: " + costTime);
+        } else {
+            log.info("the rpc response time is very successfully, requestId = " + this.request.getRequestId() + ", cost time: " + costTime);
         }
     }
 

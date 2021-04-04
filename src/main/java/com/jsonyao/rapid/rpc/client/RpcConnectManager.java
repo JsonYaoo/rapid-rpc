@@ -104,7 +104,7 @@ public class RpcConnectManager {
         // 2. 调用建立连接方法, 发起远程连接操作
         Set<InetSocketAddress> existedInetSocketAddresses = connectedHandlerMap.keySet();
         for (InetSocketAddress inetSocketAddress : newAllServerNodeSet) {
-            if(existedInetSocketAddresses.contains(inetSocketAddress)){
+            if(!existedInetSocketAddresses.contains(inetSocketAddress)){
                 connectAsync(inetSocketAddress);
             }
         }
@@ -180,9 +180,12 @@ public class RpcConnectManager {
      */
     private void addHandler(RpcClientHandler handler) {
         connectedHandlerList.add(handler);
-        connectedHandlerMap.put((InetSocketAddress) handler.getRemotePeer(), handler);
+        // 2、执行顺序: 此时属于添加客户端建立连接完成的节点上, 客户端与服务端的通道还没激活, 所以如果在通道激活期间赋值RemotePeer是获取不到的
+//        connectedHandlerMap.put((InetSocketAddress) handler.getRemotePeer(), handler);
+        // 所以改用通道获取值RemotePeer
+        connectedHandlerMap.put((InetSocketAddress) handler.getChannel().remoteAddress(), handler);
 
-        // 唤醒可用的业务执行器 signalAvailableHandler TODO
+        // 唤醒可用的业务执行器 signalAvailableHandler
         signalAvailableHandler();
     }
 

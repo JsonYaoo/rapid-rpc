@@ -17,6 +17,16 @@ public class RpcClient {
     private final Map<Class<?>, Object> syncProxyInstanceMap = new ConcurrentHashMap<>();
     private final Map<Class<?>, Object> asyncProxyInstanceMap = new ConcurrentHashMap<>();
 
+    public RpcClient() {
+
+    }
+
+    public void initClient(String serverAddress, long timeout) {
+        this.serverAddress = serverAddress;
+        this.timeout = timeout;
+        this.connect();
+    }
+
     public RpcClient(String serverAddress, long timeout) {
         this.serverAddress = serverAddress;
         this.timeout = timeout;
