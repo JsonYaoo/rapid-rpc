@@ -1,14 +1,18 @@
 package com.jsonyao.rapid.rpc.client;
 
+import com.jsonyao.rapid.rpc.codec.RpcResponse;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.net.SocketAddress;
 
 /**
  * 基于Netty实现RPC框架: Client业务处理器
  */
-public class RpcClientHandler extends SimpleChannelInboundHandler<Object> {
+public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
 
     /**
      * 缓存remotePeer: 通道连接的远端地址
@@ -32,7 +36,13 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<Object> {
         this.remotePeer = this.channel.remoteAddress();
     }
 
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    /**
+     * 读取Buffer数据: 已经被自定义解码器解码成RpcResponse了
+     * @param ctx
+     * @param msg
+     * @throws Exception
+     */
+    protected void channelRead0(ChannelHandlerContext ctx, RpcResponse msg) throws Exception {
 
     }
 
