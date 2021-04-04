@@ -14,11 +14,12 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * 基于Netty实现RPC框架: 连接管理器: 解析地址、建立连接、添加连接缓存、失败监听(清除失败连接资源、失败重连)、成功监听、释放所有连接资源
+ * 基于Netty实现RPC框架: 连接管理器: 解析地址、建立连接、添加连接缓存、失败监听(清除失败连接资源、失败重连)、成功监听、释放所有连接资源、取模方式轮训选择业务处理器、关闭连接管理器服务、重新发起一次连接
  */
 @Slf4j
 public class RpcConnectManager {
@@ -61,6 +62,9 @@ public class RpcConnectManager {
      */
     private ReentrantLock connectedLock = new ReentrantLock();
     private Condition connectedCondition = connectedLock.newCondition();
+    private long connectTimeoutMills = 6000;// 连接选择器等待的超时时间
+    private volatile boolean isRunning = true;// 程序开关: 连接管理器运行状态
+    private volatile AtomicInteger handlerIndex = new AtomicInteger(0);// 当前连接选择器所选的业务处理器索引 => volatile是多余的, 写不写都可以, 因为AtomicInteger的value本身就是用了volatile修饰
 
     // 1. 异步连接、线程池、真正发起连接、连接失败监听、连接成功监听
     // 2. 对于连接进来的资源做一个缓存(即管理)
@@ -183,7 +187,7 @@ public class RpcConnectManager {
     }
 
     /**
-     * 唤醒另外一端的线程(阻塞的状态中): 告知有新连接加入
+     * 唤醒另外一端的线程(阻塞的状态中): 告知连接选择处理器有新连接加入
      */
     private void signalAvailableHandler() {
         connectedLock.lock();
@@ -192,6 +196,83 @@ public class RpcConnectManager {
         } finally {
             connectedLock.unlock();
         }
+    }
+
+    /**
+     * 等待新连接接入
+     */
+    private boolean waitingAvailableHandler() throws InterruptedException {
+        connectedLock.lock();
+        try {
+            return connectedCondition.await(this.connectTimeoutMills, TimeUnit.MILLISECONDS);
+        } finally {
+            connectedLock.unlock();
+        }
+    }
+
+    /**
+     * 连接选择处理器
+     * @return
+     */
+    public RpcClientHandler chooseHandler(){
+        // 复制一份handler列表, 解决线程安全问题
+        CopyOnWriteArrayList<RpcClientHandler> handlers = (CopyOnWriteArrayList<RpcClientHandler>) this.connectedHandlerList.clone();
+        int size = handlers.size();
+        while (isRunning && size <= 0) {
+            try {
+                if(waitingAvailableHandler()){
+                    // 再复制一份handler列表, 解决线程安全问题 => 因为都通知到了, 说明有新的handler加入了, 所以需要刷新复制的列表
+                    handlers = (CopyOnWriteArrayList<RpcClientHandler>) this.connectedHandlerList.clone();
+                    size = handlers.size();
+                }
+            } catch (InterruptedException e) {
+                log.error(" waiting for available node is interrupted!");
+                throw new RuntimeException("no connect any servers!", e);
+            }
+        }
+
+        // 防止做stop时带来的风险
+        if(!isRunning) return null;
+
+        // 取模方式轮训选择业务处理器
+        return handlers.get((handlerIndex.getAndAdd(1) + size) % size);
+    }
+
+    /**
+     * 关闭连接管理器服务
+     */
+    public void stop(){
+        // 程序开关为false
+        isRunning = false;
+
+        // 关闭handler连接资源
+        RpcClientHandler[] rpcClientHandlers = connectedHandlerList.toArray(new RpcClientHandler[0]);
+        for (RpcClientHandler rpcClientHandler : rpcClientHandlers) {
+            clearConnected((InetSocketAddress) rpcClientHandler.getRemotePeer());
+        }
+
+        // 唤醒所有正在阻塞的线程, 因为程序开关发生了变化 => 这次唤醒会使得所有线程统统选择了空的业务处理器
+        // 或者可以让阻塞的线程进行等待超时, 然后抛出了异常就终止了 => 但是这样不优雅
+        signalAvailableHandler();
+
+        // 关闭资源
+        threadPoolExecutor.shutdown();
+        eventLoopGroup.shutdownGracefully();
+    }
+
+    /**
+     * 重新发起一次连接
+     */
+    public void reconnect(final RpcClientHandler handler, final SocketAddress remotePeer) {
+        // 释放旧的资源
+        if(handler != null) {
+            handler.close();
+            connectedHandlerList.remove(handler);
+            connectedHandlerMap.remove(remotePeer);
+        }
+
+        // 重新异步地发起一次连接
+        connectAsync((InetSocketAddress) remotePeer);
     }
 
     /**
