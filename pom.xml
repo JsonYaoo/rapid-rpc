@@ -42,12 +42,12 @@
             <version>4.1.12.Final</version>
         </dependency>
 
+        <!-- Google基于Protobuf做的一个Java序列化框架: 映射Java Class成Protobuf文件 -->
         <dependency>
             <groupId>io.protostuff</groupId>
             <artifactId>protostuff-core</artifactId>
             <version>1.6.1</version>
         </dependency>
-
         <dependency>
             <groupId>io.protostuff</groupId>
             <artifactId>protostuff-runtime</artifactId>
