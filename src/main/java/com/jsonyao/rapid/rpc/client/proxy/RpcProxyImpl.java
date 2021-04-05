@@ -17,10 +17,12 @@ public class RpcProxyImpl<T> implements InvocationHandler, RpcAsyncProxy {
 
     private Class<T> clazz;
     private long timeout;
+    private RpcConnectManager rpcConnectManager;
 
-    public RpcProxyImpl(Class<T> clazz, long timeout) {
+    public RpcProxyImpl(RpcConnectManager rpcConnectManager, Class<T> clazz, long timeout) {
         this.clazz = clazz;
         this.timeout = timeout;
+        this.rpcConnectManager = rpcConnectManager;
     }
 
     /**
@@ -42,7 +44,7 @@ public class RpcProxyImpl<T> implements InvocationHandler, RpcAsyncProxy {
         request.setParameters(args);
 
         // 2. 选择一个合适的Client任务处理器 => 取模方式轮训选择业务处理器
-        RpcClientHandler rpcClientHandler = RpcConnectManager.getInstance().chooseHandler();
+        RpcClientHandler rpcClientHandler = rpcConnectManager.chooseHandler();
 
         // 3. 发送真正的客户端请求, 并获取返回结果 => 发是异步的发, 但获取是同步阻塞的获取, 所以整体来讲, 还是同步阻塞式的代理调用
         RpcFuture rpcFuture = rpcClientHandler.sendRequest(request);
@@ -72,7 +74,7 @@ public class RpcProxyImpl<T> implements InvocationHandler, RpcAsyncProxy {
         request.setParameterTypes(parameterTypes);
 
         // 2. 选择一个合适的Client任务处理器 => 取模方式轮训选择业务处理器
-        RpcClientHandler rpcClientHandler = RpcConnectManager.getInstance().chooseHandler();
+        RpcClientHandler rpcClientHandler = rpcConnectManager.chooseHandler();
 
         // 3. 发送真正的客户端请求, 并获取返回结果 => 发是异步的发, 返回的是Future对象, 所以整体来讲, 是异步式的代理调用
         return rpcClientHandler.sendRequest(request);

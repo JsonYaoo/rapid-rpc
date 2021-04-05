@@ -27,13 +27,12 @@ public class RpcConnectManager {
     /**
      * 单例模式: 饥饿式
      */
-    private static volatile RpcConnectManager RPC_CONNECT_MANAGER = new RpcConnectManager();
-    public static RpcConnectManager getInstance() {
-        return RPC_CONNECT_MANAGER;
-    }
+//    private static volatile RpcConnectManager RPC_CONNECT_MANAGER = new RpcConnectManager();
+//    public static RpcConnectManager getInstance() {
+//        return RPC_CONNECT_MANAGER;
+//    }
 
-    // 私有构造函数 => 由于是单例
-    private RpcConnectManager() {
+    public RpcConnectManager() {
 
     }
 
@@ -78,7 +77,15 @@ public class RpcConnectManager {
     }
 
     /**
-     * 更新缓存信息, 并异步发起连接
+     * 	add connect List<String> serverAddress
+     * @param serverAddress
+     */
+    public void connect(List<String> serverAddress) {
+        updateConnectedServer(serverAddress);
+    }
+
+    /**
+     * 更新缓存信息, 如果存在还没有连接的服务地址, 则异步发起连接
      */
     public void updateConnectedServer(List<String> allServerAddress) {
         if(CollectionUtils.isEmpty(allServerAddress)) {
