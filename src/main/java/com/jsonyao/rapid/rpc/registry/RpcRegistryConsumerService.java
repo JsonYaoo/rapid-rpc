@@ -85,10 +85,10 @@ public class RpcRegistryConsumerService extends AbstractRpcRegistry implements N
         // 这里只监控添加的操作
         if(ChangedEvent.Type.CHILD_ADDED == type) {
             String[] pathArray = null;
-            if(StringUtils.isBlank(path) && (pathArray = path.substring(1).split("/")).length == 2) {
+            if(!StringUtils.isBlank(path) && (pathArray = path.substring(1).split("/")).length == 2) {
                 //	对根节点下的直接子节点进行继续监听，就是我们的服务权限命名+版本号的路径监听
                 //	/rapid-rpc/com.bfxy.rapid.rpc.invoke.consumer.test.HelloService:1.0.0
-                zookeeperClient.listener4ChildrenPath(path, this);
+                this.zookeeperClient.listener4ChildrenPath(path, this);
             }
             //	继续监听: /rapid-rpc/com.bfxy.rapid.rpc.invoke.consumer.test.HelloService:1.0.0/providers
             if(!StringUtils.isBlank(path) && (pathArray = path.substring(1).split("/")).length == 3) {

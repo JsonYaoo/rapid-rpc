@@ -10,11 +10,11 @@ public class ZKConumerStarter {
 
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws Exception {
-		ZookeeperClient zookeeperClient = new CuratorImpl("192.168.11.221:2181,192.168.11.222:2181,192.168.11.223:2181", 10000);
+		ZookeeperClient zookeeperClient = new CuratorImpl("127.0.0.1:2181", 10000);
 		RpcRegistryConsumerService rpcRegistryConsumerService = new RpcRegistryConsumerService(zookeeperClient);
 		RpcClientConfig rpcClientConfig = new RpcClientConfig(rpcRegistryConsumerService);
 		
-		Thread.sleep(1000);
+		Thread.sleep(5000);
 
 		// 这里是通过consumerConfig来获取代理对象
 		ConsumerConfig<HelloService> consumerConfig = (ConsumerConfig<HelloService>) rpcClientConfig.getConsumer(HelloService.class, "1.0.0");

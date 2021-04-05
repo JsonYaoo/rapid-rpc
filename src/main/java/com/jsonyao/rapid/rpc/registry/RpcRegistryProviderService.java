@@ -98,7 +98,7 @@ public class RpcRegistryProviderService extends AbstractRpcRegistry {
         //	key: /rapid-rpc/com.bfxy.rapid.rpc.invoke.consumer.test.HelloService:1.0.0/providers/127.0.0.1:5678
         //	value: instanceMap to json
         String address = providerConfig.getAddress();
-        String registryInstanceKey = registryKey + "/" + PROVIDERS_PATH + "/" + address;
+        String registryInstanceKey = registryKey + PROVIDERS_PATH + "/" + address;
         Map<String, String> instanceMap = new HashMap<>();
         instanceMap.put("weight", providerConfig.getWeight() + "");
         zookeeperClient.addEphemeralNode(registryInstanceKey, FastJsonConvertUtil.convertObjectToJSON(instanceMap));
